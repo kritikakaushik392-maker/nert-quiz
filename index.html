@@ -1,0 +1,150 @@
+from pathlib import Path
+
+html = r'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NCERT Quiz Hub</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#182033;--muted:#667085;--accent:#635bff;--accent2:#8b5cf6;--good:#16a34a;--bad:#dc2626;--line:#e5e7eb}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(135deg,#f6f7ff,#eef7ff);color:var(--ink)}
+.container{max-width:1000px;margin:auto;padding:28px 18px}
+header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:28px}
+.logo{font-weight:900;font-size:25px}.logo span{color:var(--accent)}
+.badge{background:#ede9fe;color:#5b21b6;padding:8px 12px;border-radius:999px;font-weight:700;font-size:13px}
+.hero{padding:42px 10px 25px;text-align:center}.hero h1{font-size:clamp(34px,7vw,62px);line-height:1;margin:0 0 14px;letter-spacing:-2px}.hero p{color:var(--muted);font-size:17px;max-width:650px;margin:auto}
+.panel{background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.8);box-shadow:0 18px 55px rgba(31,41,55,.09);border-radius:24px;padding:25px;margin-top:25px}
+.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+label{font-size:13px;font-weight:800;color:#475467;margin-bottom:7px;display:block}
+select,input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:15px;color:var(--ink)}
+.btn{border:0;border-radius:13px;padding:13px 18px;font-weight:800;cursor:pointer;font-size:15px;transition:.18s}
+.btn:hover{transform:translateY(-1px)}.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}.ghost{background:#f2f4f7;color:#344054}
+.startrow{display:flex;justify-content:center;margin-top:18px}.startrow .btn{min-width:220px}
+.hidden{display:none}.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.progress{height:9px;background:#eaecf0;border-radius:99px;overflow:hidden;margin-bottom:20px}.progress div{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:.3s}
+.timer{background:#111827;color:#fff;padding:9px 13px;border-radius:11px;font-weight:900;min-width:72px;text-align:center}
+.qmeta{color:var(--muted);font-weight:700;font-size:14px}.question{font-size:24px;line-height:1.35;font-weight:850;margin:18px 0}
+.options{display:grid;gap:12px}.option{padding:15px 16px;border:2px solid #eaecf0;background:#fff;border-radius:14px;text-align:left;cursor:pointer;font-weight:650;font-size:15px}.option:hover{border-color:#c7c3ff;background:#fafaff}.option.selected{border-color:var(--accent);background:#f5f3ff}.option.correct{border-color:var(--good);background:#f0fdf4}.option.wrong{border-color:var(--bad);background:#fef2f2}
+.nav{display:flex;justify-content:space-between;margin-top:22px;gap:10px}.nav .btn{min-width:120px}
+.result{text-align:center}.score{font-size:72px;font-weight:950;letter-spacing:-4px}.result p{color:var(--muted);font-size:17px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}.stat{background:#f8fafc;border:1px solid var(--line);padding:16px;border-radius:15px}.stat b{display:block;font-size:24px}.review{text-align:left;margin-top:25px}.review-item{padding:14px 0;border-bottom:1px solid var(--line)}.review-item b{display:block;margin-bottom:6px}.review-item small{color:var(--muted)}
+footer{text-align:center;color:#98a2b3;padding:30px 0 10px;font-size:13px}
+@media(max-width:700px){.controls{grid-template-columns:1fr}.panel{padding:18px}.question{font-size:21px}.stats{grid-template-columns:1fr}.hero{padding-top:25px}header{align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="container">
+<header><div class="logo">NCERT<span>Quiz</span></div><div class="badge">Practice • Learn • Improve</div></header>
+
+<section id="home">
+  <div class="hero">
+    <h1>Test your NCERT knowledge.</h1>
+    <p>Original practice questions aligned with common NCERT concepts. Pick a class, subject and quiz length, then challenge yourself.</p>
+  </div>
+  <div class="panel">
+    <div class="controls">
+      <div><label>Class</label><select id="classSelect"><option>Class 10</option><option>Class 9</option><option>Class 8</option></select></div>
+      <div><label>Subject</label><select id="subjectSelect"><option>Science</option><option>Mathematics</option><option>Social Science</option></select></div>
+      <div><label>Questions</label><select id="countSelect"><option value="5">5 questions</option><option value="10">10 questions</option></select></div>
+    </div>
+    <div class="startrow"><button class="btn primary" onclick="startQuiz()">Start Test →</button></div>
+  </div>
+</section>
+
+<section id="quiz" class="panel hidden">
+  <div class="topbar"><div><div class="qmeta" id="qmeta"></div></div><div class="timer" id="timer">05:00</div></div>
+  <div class="progress"><div id="progress"></div></div>
+  <div class="question" id="question"></div>
+  <div class="options" id="options"></div>
+  <div class="nav"><button class="btn ghost" id="prevBtn" onclick="prevQ()">← Previous</button><button class="btn primary" id="nextBtn" onclick="nextQ()">Next →</button></div>
+</section>
+
+<section id="result" class="panel hidden">
+  <div class="result">
+    <div class="qmeta">TEST COMPLETE</div><div class="score" id="score">0%</div>
+    <p id="resultText"></p>
+    <div class="stats"><div class="stat"><b id="correctStat">0</b>Correct</div><div class="stat"><b id="wrongStat">0</b>Wrong</div><div class="stat"><b id="timeStat">0:00</b>Time used</div></div>
+    <button class="btn primary" onclick="location.reload()">Take another test</button>
+  </div>
+  <div class="review"><h3>Answer review</h3><div id="review"></div></div>
+</section>
+<footer>Made for practice • Questions are original and concept-aligned, not copied from NCERT.</footer>
+</div>
+
+<script>
+const bank = {
+ Science:[
+  {q:"Which process in green plants converts light energy into chemical energy stored in food?",o:["Respiration","Photosynthesis","Transpiration","Digestion"],a:1},
+  {q:"A solution with pH 2 is best described as:",o:["Strongly acidic","Weakly basic","Neutral","Strongly basic"],a:0},
+  {q:"Which part of the human nervous system mainly coordinates balance and posture?",o:["Cerebrum","Cerebellum","Medulla","Spinal cord"],a:1},
+  {q:"When an object is placed between the pole and focus of a concave mirror, the image is generally:",o:["Real and inverted","Virtual and magnified","Real and diminished","Same size and real"],a:1},
+  {q:"The SI unit of electric power is:",o:["Volt","Ampere","Watt","Ohm"],a:2},
+  {q:"Which gas is released during photosynthesis?",o:["Nitrogen","Oxygen","Carbon dioxide","Hydrogen"],a:1},
+  {q:"The resistance of a conductor depends on its material, length and:",o:["Colour","Cross-sectional area","Mass only","Temperature only"],a:1},
+  {q:"Which of these is a non-renewable source of energy?",o:["Solar energy","Wind energy","Coal","Tidal energy"],a:2},
+  {q:"In a food chain, organisms that make their own food are called:",o:["Consumers","Decomposers","Producers","Parasites"],a:2},
+  {q:"The splitting of white light into its component colours is called:",o:["Reflection","Dispersion","Diffraction","Scattering"],a:1}
+ ],
+ Mathematics:[
+  {q:"If the zeroes of x² − 5x + 6 are α and β, then α + β equals:",o:["6","5","−5","−6"],a:1},
+  {q:"The distance between (0,0) and (3,4) is:",o:["3","4","5","7"],a:2},
+  {q:"For a pair of linear equations to have infinitely many solutions, their corresponding coefficients must be:",o:["Proportional","All zero","Equal to 1","Opposite"],a:0},
+  {q:"The probability of getting an even number when a fair die is rolled is:",o:["1/6","1/3","1/2","2/3"],a:2},
+  {q:"The 10th term of the AP 3, 7, 11, 15, ... is:",o:["35","39","43","47"],a:1},
+  {q:"The area of a circle with radius 7 cm, using π = 22/7, is:",o:["44 cm²","154 cm²","308 cm²","49 cm²"],a:1},
+  {q:"If tan θ = 1 and θ is acute, then θ is:",o:["30°","45°","60°","90°"],a:1},
+  {q:"A quadratic equation has equal roots when its discriminant is:",o:["Positive","Negative","Zero","One"],a:2},
+  {q:"The mean of 4, 6, 8, 10 and 12 is:",o:["7","8","9","10"],a:1},
+  {q:"The volume of a cylinder of radius r and height h is:",o:["2πrh","πr²h","πrh²","4πr²"],a:1}
+ ],
+ "Social Science":[
+  {q:"Which institution is primarily responsible for making laws in India at the Union level?",o:["Parliament","Supreme Court","Election Commission","Reserve Bank"],a:0},
+  {q:"The term 'federalism' refers to:",o:["Rule by one person","Division of power between levels of government","Military rule","Rule without a constitution"],a:1},
+  {q:"Which sector includes agriculture, fishing and forestry?",o:["Primary","Secondary","Tertiary","Quaternary"],a:0},
+  {q:"The printing press helped spread ideas by making books:",o:["More expensive","Less accessible","More widely available","Illegal"],a:2},
+  {q:"Which soil is commonly associated with cotton cultivation in India?",o:["Black soil","Laterite soil","Mountain soil","Arid soil"],a:0},
+  {q:"Democracy is based on the principle that:",o:["Power should be inherited","Citizens participate in choosing representatives","Only officials can vote","Courts make all laws"],a:1},
+  {q:"A consumer has the right to seek redressal when:",o:["A product or service causes a legitimate grievance","A shop is closed","A friend disagrees","Prices change daily"],a:0},
+  {q:"The main aim of the Reserve Bank of India includes regulating:",o:["School exams","Monetary and banking systems","Weather","Railway routes"],a:1},
+  {q:"Which is an example of a renewable resource?",o:["Coal","Petroleum","Solar energy","Natural gas"],a:2},
+  {q:"Power sharing is desirable because it can:",o:["Reduce opportunities for conflict","End all disagreements","Remove elections","Give power to one group"],a:0}
+ ]
+};
+
+let questions=[], answers=[], current=0, startTime=0, timerId=null, seconds=300;
+function startQuiz(){
+ const subject=document.getElementById("subjectSelect").value;
+ const count=+document.getElementById("countSelect").value;
+ questions=[...bank[subject]].sort(()=>Math.random()-0.5).slice(0,count);
+ answers=Array(count).fill(null); current=0; seconds=300; startTime=Date.now();
+ document.getElementById("home").classList.add("hidden"); document.getElementById("quiz").classList.remove("hidden");
+ clearInterval(timerId); timerId=setInterval(tick,1000); render();
+}
+function tick(){seconds--; if(seconds<=0){seconds=0; finish();} updateTimer();}
+function updateTimer(){let m=Math.floor(seconds/60),s=seconds%60;document.getElementById("timer").textContent=`${m}:${String(s).padStart(2,"0")}`;}
+function render(){
+ const q=questions[current]; document.getElementById("qmeta").textContent=`Question ${current+1} of ${questions.length}`;
+ document.getElementById("question").textContent=q.q; document.getElementById("progress").style.width=((current+1)/questions.length*100)+"%";
+ const box=document.getElementById("options"); box.innerHTML="";
+ q.o.forEach((x,i)=>{const b=document.createElement("button");b.className="option"+(answers[current]===i?" selected":"");b.textContent=String.fromCharCode(65+i)+". "+x;b.onclick=()=>{answers[current]=i;render()};box.appendChild(b)});
+ document.getElementById("prevBtn").disabled=current===0; document.getElementById("nextBtn").textContent=current===questions.length-1?"Finish Test":"Next →";
+ updateTimer();
+}
+function prevQ(){if(current>0){current--;render()}}
+function nextQ(){if(current<questions.length-1){current++;render()}else finish()}
+function finish(){
+ clearInterval(timerId); document.getElementById("quiz").classList.add("hidden"); document.getElementById("result").classList.remove("hidden");
+ let correct=0; questions.forEach((q,i)=>{if(answers[i]===q.a)correct++});
+ const pct=Math.round(correct/questions.length*100); document.getElementById("score").textContent=pct+"%";
+ document.getElementById("correctStat").textContent=correct; document.getElementById("wrongStat").textContent=questions.length-correct;
+ const used=Math.max(0,300-seconds); document.getElementById("timeStat").textContent=`${Math.floor(used/60)}:${String(used%60).padStart(2,"0")}`;
+ document.getElementById("resultText").textContent=pct>=80?"Great work — strong concept recall!":pct>=50?"Nice attempt — review the missed concepts and try again.":"Good start — revise the relevant NCERT concepts and give it another shot.";
+ const r=document.getElementById("review");r.innerHTML="";
+ questions.forEach((q,i)=>{const d=document.createElement("div");d.className="review-item";let yours=answers[i]===null?"Not answered":q.o[answers[i]];d.innerHTML=`<b>${i+1}. ${q.q}</b><small>Your answer: ${yours}<br>Correct answer: ${q.o[q.a]}</small>`;r.appendChild(d)});
+}
+</script>
+</body>
+</html>'''
+
+path = Path("/mnt/data/ncert_quiz_website.html")
+path.write_text(html, encoding="utf-8")
+print(path)
