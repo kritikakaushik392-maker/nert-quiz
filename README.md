@@ -1,1 +1,1 @@
-https://kritikakaushik392.github.io/ncert-quiz/
+https://vedanshkaushikdev.github.io/ncert-quiz/
